@@ -12,6 +12,8 @@ image:
   repository: ghcr.io/rongrepolab/di-devops-test
   tag: latest
   pullPolicy: Always
+  pullSecrets:
+    - name: ghcr-credentials
 
 replicaCount: 1
 containerPort: 3000
