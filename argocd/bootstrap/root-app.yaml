@@ -1,0 +1,53 @@
+# Root "App of Apps" — apply this ONCE manually to bootstrap Argo CD.
+#
+# After applying, Argo CD will self-manage everything under argocd/
+# (projects + applicationsets) and those in turn generate per-app Applications.
+#
+# Apply with:
+#   kubectl apply -f argocd/bootstrap/root-app.yaml
+#
+# ┌──────────────────────────────────────────────────────────┐
+# │  Bootstrap flow                                          │
+# │                                                          │
+# │  kubectl apply  ──►  root-app (this file)                │
+# │                           │                              │
+# │                           ▼                              │
+# │               argocd/projects/*.yaml                     │
+# │               argocd/applicationsets/*.yaml              │
+# │                           │                              │
+# │                           ▼                              │
+# │         ApplicationSet generates Applications            │
+# │         (one per environments/*/apps/*.yaml)             │
+# │                           │                              │
+# │                           ▼                              │
+# │         Helm chart deployed to each namespace            │
+# └──────────────────────────────────────────────────────────┘
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/rongrepolab/di-devops-gitops.git
+    targetRevision: HEAD
+    # Sync everything in argocd/ EXCEPT the bootstrap folder (avoid circular dependency)
+    path: argocd
+    directory:
+      recurse: true
+      exclude: "bootstrap/**"
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

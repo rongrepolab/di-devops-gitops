@@ -1,0 +1,75 @@
+# ApplicationSet — discovers every environments/*/apps/*.yaml file and
+# generates one Argo CD Application per app+environment combination.
+#
+# How it works:
+#   1. The git files generator scans the repo for files matching the glob.
+#   2. Each YAML file's top-level keys become template variables:
+#        {{appName}}   — e.g. "di-devops-test"
+#        {{environment}} — e.g. "dev"
+#        {{namespace}}   — e.g. "di-devops-dev"
+#   3. The Application source points to charts/generic-app and uses the
+#      same YAML file as a Helm values override.
+#
+# To add a new app:   drop a new file under environments/<env>/apps/<app>.yaml
+# To add a new env:   create a new environments/<env>/apps/ directory with app files
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: di-devops-apps
+  namespace: argocd
+spec:
+  # ── Generator ────────────────────────────────────────────────────────────
+  generators:
+    - git:
+        repoURL: https://github.com/rongrepolab/di-devops-gitops.git
+        revision: HEAD
+        files:
+          - path: "environments/*/apps/*.yaml"
+
+  # ── Application template ─────────────────────────────────────────────────
+  template:
+    metadata:
+      # Unique name per app+environment: e.g. "di-devops-test-dev"
+      name: "{{appName}}-{{environment}}"
+      labels:
+        app.kubernetes.io/name: "{{appName}}"
+        environment: "{{environment}}"
+      # Prevent accidental pruning of the Application object itself
+      finalizers:
+        - resources-finalizer.argocd.io
+
+    spec:
+      project: di-devops
+
+      source:
+        repoURL: https://github.com/rongrepolab/di-devops-gitops.git
+        targetRevision: HEAD
+        # The generic reusable Helm chart
+        path: charts/generic-app
+        helm:
+          # Override defaults with the per-environment values file
+          valueFiles:
+            - "../../environments/{{environment}}/apps/{{appName}}.yaml"
+
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+
+      syncPolicy:
+        automated:
+          prune: true      # Remove resources deleted from Git
+          selfHeal: true   # Revert manual changes in the cluster
+        syncOptions:
+          - CreateNamespace=true          # Auto-create the target namespace
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+          - ServerSideApply=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+
+      # Surface health status on the Application
+      revisionHistoryLimit: 5

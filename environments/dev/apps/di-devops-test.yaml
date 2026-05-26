@@ -1,0 +1,48 @@
+# ──────────────────────────────────────────────
+# ApplicationSet metadata  (used as template variables in argocd/)
+# ──────────────────────────────────────────────
+appName: di-devops-test
+environment: dev
+namespace: di-devops-dev
+
+# ──────────────────────────────────────────────
+# Helm values (override charts/generic-app/values.yaml)
+# ──────────────────────────────────────────────
+image:
+  repository: ghcr.io/rongrepolab/di-devops-test
+  tag: latest
+  pullPolicy: Always
+
+replicaCount: 1
+containerPort: 3000
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+env:
+  - name: PORT
+    value: "3000"
+  - name: NODE_ENV
+    value: "development"
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: di-devops-test.dev.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+hpa:
+  enabled: false

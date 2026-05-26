@@ -1,0 +1,13 @@
+apiVersion: v2
+name: generic-app
+description: A generic reusable Helm chart for deploying containerized applications
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - generic
+  - app
+  - microservice
+maintainers:
+  - name: di-devops
+    email: devops@example.com

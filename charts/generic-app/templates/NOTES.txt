@@ -1,0 +1,22 @@
+Application: {{ include "generic-app.fullname" . }}
+Namespace:   {{ .Release.Namespace }}
+Environment: {{ .Values.environment | default "unknown" }}
+
+Image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+
+Service:
+  Type: {{ .Values.service.type }}
+  Port: {{ .Values.service.port }} → container:{{ .Values.containerPort }}
+
+{{- if .Values.ingress.enabled }}
+
+Ingress ({{ .Values.ingress.className }}):
+  {{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}/
+  {{- end }}
+{{- end }}
+
+{{- if .Values.hpa.enabled }}
+
+HPA: {{ .Values.hpa.minReplicas }}–{{ .Values.hpa.maxReplicas }} replicas (target CPU {{ .Values.hpa.targetCPUUtilizationPercentage }}%)
+{{- end }}

@@ -1,0 +1,58 @@
+# ──────────────────────────────────────────────
+# ApplicationSet metadata  (used as template variables in argocd/)
+# ──────────────────────────────────────────────
+appName: di-devops-test
+environment: prod
+namespace: di-devops-prod
+
+# ──────────────────────────────────────────────
+# Helm values (override charts/generic-app/values.yaml)
+# ──────────────────────────────────────────────
+image:
+  repository: ghcr.io/rongrepolab/di-devops-test
+  tag: "1.0.0"   # Always pin a specific tag in production
+  pullPolicy: IfNotPresent
+
+replicaCount: 3
+containerPort: 3000
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+env:
+  - name: PORT
+    value: "3000"
+  - name: NODE_ENV
+    value: "production"
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "8m"
+  hosts:
+    - host: di-devops-test.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: di-devops-test-tls
+      hosts:
+        - di-devops-test.example.com
+
+hpa:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70

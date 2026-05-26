@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: di-devops
+  namespace: argocd
+  # Protect the project from accidental deletion
+  finalizers:
+    - resources-finalizer.argocd.io
+spec:
+  description: "DI DevOps platform — all environments"
+
+  # Allow syncing from this GitOps repo only
+  sourceRepos:
+    - "https://github.com/rongrepolab/di-devops-gitops.git"
+
+  # Allow deploying to any di-devops-* namespace on the in-cluster server
+  destinations:
+    - namespace: "di-devops-*"
+      server: https://kubernetes.default.svc
+
+  # Cluster-scoped resources this project may create
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+
+  # All namespace-scoped resources are permitted
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  # Orphaned resource monitoring — warn when resources exist outside Argo CD
+  orphanedResources:
+    warn: true
+
+  roles:
+    - name: developer
+      description: "Read and sync access for developers"
+      policies:
+        - p, proj:di-devops:developer, applications, get,  di-devops/*, allow
+        - p, proj:di-devops:developer, applications, sync, di-devops/*, allow
+      groups:
+        - di-devops-developers
+
+    - name: admin
+      description: "Full access for platform engineers"
+      policies:
+        - p, proj:di-devops:admin, applications, *, di-devops/*, allow
+      groups:
+        - di-devops-admins
