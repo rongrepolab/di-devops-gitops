@@ -9,7 +9,7 @@ namespace: di-devops-dev
 # ──────────────────────────────────────────────
 image:
   repository: ghcr.io/rongrepolab/di-devops-test
-  tag: dev-df0fa00
+  tag: dev-415eca7
   pullPolicy: Always
   pullSecrets:
     - name: ghcr-credentials
