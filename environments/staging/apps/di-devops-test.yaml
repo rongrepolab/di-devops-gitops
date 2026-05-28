@@ -9,7 +9,7 @@ namespace: di-devops-staging
 # ──────────────────────────────────────────────
 image:
   repository: ghcr.io/rongrepolab/di-devops-test
-  tag: staging-cfb7424
+  tag: staging-7ac1b38
   pullPolicy: Always
   pullSecrets:
     - name: ghcr-credentials
